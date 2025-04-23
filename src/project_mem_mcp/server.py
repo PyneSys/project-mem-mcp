@@ -16,6 +16,7 @@ mcp = FastMCP(
     name="Project Memory MCP",
     instructions=f"""
 This MCP is for storing and retrieving project information to/from an English memory file.
+
 The memory file should store all information about the project in short and concise manner. It should be
 good for humans and AI agents to catch up on the project status and progress quickly. Should contain descriptions,
 ongoing tasks, tasks to do, references to files and other project resources, even URLs where to get more information.
@@ -25,12 +26,17 @@ The memory file is a Markdown file named `{MEMORY_FILE}` in the project director
 Rules:
 - This must be read by `get_project_memory` tool in the beginning of the first request of every conversation
   if the conversation is about a project and a full project path is provided.
-- At the end of every answer the project memory must be updated using the `update_project_memory` tool.
+- At the end of every of your answers the project memory must be updated using the `update_project_memory`
+  or `set_project_memory` tool if any relevant changes were made to the project or any useful information
+  was discovered or discussed.
 - The `set_project_memory` tool must be used to set the whole project memory if `update_project_memory`
   failed or there is no project memory yet.
 - Never store any sensitive information in the memory file, e.g. personal information, company
-  information, passwords, access tokens, email addresses, etc.
+  information, passwords, access tokens, email addresses, etc. !
 - The memory file **must be in English**!
+- You can sometimes make it shorter, always remove any information that is no longer relevant.
+- Always remove any information that is no longer relevant from the memory file.
+- If the user talks about "memory" or "project memory", you should use the tools of this MCP.
 """
 )
 
@@ -74,11 +80,18 @@ if __name__ == "__main__":
 
 @mcp.tool()
 def get_project_memory(
-    project_path: str = Field(description="The path to the project")
+    project_path: str = Field(description="The full path to the project directory")
 ) -> str:
     """
     Get the whole project memory for the given project path in Markdown format.
     This must be used in the beginning of the first request of every conversation.
+
+    The memory file contains vital information about the project such as descriptions,
+    ongoing tasks, references to important files, and other project resources.
+
+    :return: The project memory content in Markdown format
+    :raises FileNotFoundError: If the project path doesn't exist or MEMORY.md is missing
+    :raises PermissionError: If the project path is not in allowed directories
     """
     pp = Path(project_path).resolve()
 
@@ -95,13 +108,26 @@ def get_project_memory(
 
 @mcp.tool()
 def set_project_memory(
-    project_path: str = Field(description="The path to the project"),
-    project_info: str = Field(description="The project information to set in Markdown format")
+    project_path: str = Field(description="The full path to the project directory"),
+    project_info: str = Field(description="Complete project information in Markdown format")
 ):
     """
     Set the whole project memory for the given project path in Markdown format.
-    This should be used if the `update_project_memory` tool failed or there is no project memory yet.
-    The project memory file **must be in English**!
+
+    Use this tool when:
+    - Creating a memory file for a new project
+    - Completely replacing an existing memory file
+    - When `update_project_memory` fails to apply patches
+    - When extensive reorganization of the memory content is needed
+
+    Guidelines for content:
+    - The project memory file **must be in English**!
+    - Should be concise yet comprehensive
+    - Remove outdated information
+    - Include project overview, components, status, and important references
+
+    :raises FileNotFoundError: If the project path doesn't exist
+    :raises PermissionError: If the project path is not in allowed directories
     """
     pp = Path(project_path).resolve()
     if not pp.exists() or not pp.is_dir():
@@ -116,13 +142,23 @@ def set_project_memory(
 def validate_block_integrity(patch_content):
     """
     Validate the integrity of patch blocks before parsing.
-    Checks for balanced markers and correct sequence.
+
+    This function performs comprehensive validation of the patch format:
+    1. Checks for balanced markers (SEARCH, separator, REPLACE)
+    2. Verifies correct marker sequence
+    3. Detects nested markers inside blocks (which would cause errors)
+
+    All these checks happen before actual parsing to provide clear error
+    messages and prevent corrupted patches from being applied.
+
+    :param patch_content: The raw patch content to validate
+    :raises ValueError: With detailed message if any validation fails
     """
     # Check marker balance
     search_count = patch_content.count("<<<<<<< SEARCH")
     separator_count = patch_content.count("=======")
     replace_count = patch_content.count(">>>>>>> REPLACE")
-    
+
     if not (search_count == separator_count == replace_count):
         raise ValueError(
             f"Malformed patch format: Unbalanced markers - "
@@ -135,7 +171,7 @@ def validate_block_integrity(patch_content):
         line = line.strip()
         if line in ["<<<<<<< SEARCH", "=======", ">>>>>>> REPLACE"]:
             markers.append(line)
-    
+
     # Verify correct marker sequence (always SEARCH, SEPARATOR, REPLACE pattern)
     for i in range(0, len(markers), 3):
         if i+2 < len(markers):
@@ -144,7 +180,7 @@ def validate_block_integrity(patch_content):
                     f"Malformed patch format: Incorrect marker sequence at position {i}: "
                     f"Expected [SEARCH, SEPARATOR, REPLACE], got {markers[i:i+3]}"
                 )
-    
+
     # Check for nested markers in each block
     sections = patch_content.split("<<<<<<< SEARCH")
     for i, section in enumerate(sections[1:], 1):  # Skip first empty section
@@ -155,13 +191,21 @@ def validate_block_integrity(patch_content):
 def parse_search_replace_blocks(patch_content):
     """
     Parse multiple search-replace blocks from the patch content.
-    Returns a list of tuples (search_text, replace_text).
+
+    This function first validates the block integrity, then extracts all
+    search-replace pairs using either regex or line-by-line parsing as fallback.
+    It also checks that search and replace texts don't contain markers themselves,
+    which could lead to corrupted files.
+
+    :param patch_content: Raw patch content with SEARCH/REPLACE blocks
+    :return: List of tuples (search_text, replace_text)
+    :raises ValueError: If patch format is invalid or contains nested markers
     """
     # Define the markers
     search_marker = "<<<<<<< SEARCH"
     separator = "======="
     replace_marker = ">>>>>>> REPLACE"
-    
+
     # First validate patch integrity
     validate_block_integrity(patch_content)
 
@@ -200,13 +244,13 @@ def parse_search_replace_blocks(patch_content):
 
                 search_text = "\n".join(lines[search_start:separator_idx])
                 replace_text = "\n".join(lines[separator_idx + 1:replace_end])
-                
+
                 # Check for markers in the search or replace text
                 if any(marker in search_text for marker in [search_marker, separator, replace_marker]):
                     raise ValueError(f"Block {len(blocks)+1}: Search text contains patch markers")
                 if any(marker in replace_text for marker in [search_marker, separator, replace_marker]):
                     raise ValueError(f"Block {len(blocks)+1}: Replace text contains patch markers")
-                
+
                 blocks.append((search_text, replace_text))
 
                 i = replace_end + 1
@@ -230,14 +274,43 @@ def parse_search_replace_blocks(patch_content):
 
 @mcp.tool()
 def update_project_memory(
-    project_path: str = Field(description="The path to the project"),
-    patch_content: str = Field(description="Unified diff/patch to apply to the project memory")
+    project_path: str = Field(description="The full path to the project directory"),
+    patch_content: str = Field(description="Block-based patch content with SEARCH/REPLACE markers")
 ):
     """
-    Update the project memory by applying a unified diff/patch to the memory file.
+    Update the project memory by applying a block-based patch to the memory file.
 
-    :param project_path: The path to the project directory.
-    :param patch_content: Unified diff/patch to apply.
+    Required block format:
+    ```
+    <<<<<<< SEARCH
+    Text to find in the memory file
+    =======
+    Text to replace it with
+    >>>>>>> REPLACE
+    ```
+
+    You can include multiple search-replace blocks in a single request:
+    ```
+    <<<<<<< SEARCH
+    First text to find
+    =======
+    First replacement
+    >>>>>>> REPLACE
+    <<<<<<< SEARCH
+    Second text to find
+    =======
+    Second replacement
+    >>>>>>> REPLACE
+    ```
+
+    This tool verifies that each search text appears exactly once in the file to ensure
+    the correct section is modified. If a search text appears multiple times or isn't
+    found, it will report an error.
+
+    :return: Success message with number of blocks applied
+    :raises FileNotFoundError: If the project path or memory file doesn't exist
+    :raises ValueError: If patch format is invalid or search text isn't unique
+    :raises RuntimeError: If patch application fails for any reason
     """
     project_dir = Path(project_path).resolve()
     if not project_dir.is_dir():
@@ -278,11 +351,11 @@ def update_project_memory(
                     elif count > 1:
                         # Multiple matches - too ambiguous
                         raise ValueError(f"Block {i+1}: The search text appears {count} times in the file. "
-                                        "Please provide more context to identify the specific occurrence.")
+                                         "Please provide more context to identify the specific occurrence.")
                     else:
                         # No match found
                         raise ValueError(f"Block {i+1}: Could not find the search text in the file. "
-                                        "Please ensure the search text exactly matches the content in the file.")
+                                         "Please ensure the search text exactly matches the content in the file.")
 
                 # Write the final content back to the file
                 with open(memory_file, 'w', encoding='utf-8') as f:
@@ -292,11 +365,11 @@ def update_project_memory(
         except Exception as block_error:
             # If block format parsing fails, log the error and try traditional patch format
             eprint(f"Block format parsing failed: {str(block_error)}")
-            
+
             # If you still want to support traditional patches with whatthepatch or similar, add that code here
             # For now, we'll just raise the error from block parsing
             raise block_error
-    
+
     except Exception as e:
         # If anything goes wrong, provide detailed error
         raise RuntimeError(f"Failed to apply patch: {str(e)}")

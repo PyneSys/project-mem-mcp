@@ -1,13 +1,13 @@
 [project]
 name = "project-mem-mcp"
-version = "0.2.0"
+version = "0.1.0"
 description = "An MCP Server to store and retreive project information from memory file"
 authors = [{ name = "PYNESYS LLC" }]
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 
-dependencies = ["fastmcp>=2.2.0, <3.0.0", "unidiff>=0.7.0, <0.8.0"]
+dependencies = ["fastmcp>=2.2.0, <3.0.0"]
 
 [project.scripts]
 project-mem-mcp = "project_mem_mcp.server:main"
