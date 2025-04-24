@@ -15,13 +15,13 @@ MEMORY_FILE = "MEMORY.md"
 mcp = FastMCP(
     name="Project Memory MCP",
     instructions=f"""
-This MCP is for storing and retrieving project information to/from an English memory file.
+This MCP is for storing and retrieving project information to/from an English memory file, named
+`{MEMORY_FILE}` in the project directory.
 
 The memory file should store all information about the project in short and concise manner. It should be
 good for humans and AI agents to catch up on the project status and progress quickly. Should contain descriptions,
-ongoing tasks, tasks to do, references to files and other project resources, even URLs where to get more information.
-
-The memory file is a Markdown file named `{MEMORY_FILE}` in the project directory.
+ongoing tasks, tasks to do, discoveries, references to files and other project resources, URLs where to get more
+information, etc.
 
 Rules:
 - This must be read by `get_project_memory` tool in the beginning of the first request of every conversation
@@ -32,7 +32,7 @@ Rules:
 - The `set_project_memory` tool must be used to set the whole project memory if `update_project_memory`
   failed or there is no project memory yet.
 - Never store any sensitive information in the memory file, e.g. personal information, company
-  information, passwords, access tokens, email addresses, etc. !
+  information, passwords, access tokens, email addresses, etc!
 - The memory file **must be in English**!
 - You can sometimes make it shorter, always remove any information that is no longer relevant.
 - Always remove any information that is no longer relevant from the memory file.
