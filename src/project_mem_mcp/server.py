@@ -18,10 +18,11 @@ mcp = FastMCP(
 This MCP is for storing and retrieving project information to/from an English memory file, named
 `{MEMORY_FILE}` in the project directory.
 
-The memory file should store all information about the project in short and concise manner. It should be
-good for humans and AI agents to catch up on the project status and progress quickly. Should contain descriptions,
-ongoing tasks, tasks to do, discoveries, references to files and other project resources, URLs where to get more
-information, etc.
+The memory file should store comprehensive information about the project. It should include thorough context
+and details that help both humans and AI agents understand the project deeply. The memory should contain
+detailed descriptions, code structures, architectural decisions, ongoing tasks, future plans, discovered insights,
+challenges, references to important files, and other project resources. Include URLs, design patterns, and
+technical decisions with reasoning when relevant.
 
 Rules:
 - This must be read by `get_project_memory` tool in the beginning of the first request of every conversation
@@ -34,8 +35,9 @@ Rules:
 - Never store any sensitive information in the memory file, e.g. personal information, company
   information, passwords, access tokens, email addresses, etc!
 - The memory file **must be in English**!
-- You can sometimes make it shorter, always remove any information that is no longer relevant.
-- Always remove any information that is no longer relevant from the memory file.
+- While thoroughness is encouraged, avoid excessive verbosity or redundancy. The memory file should not
+  exceed practical limits (typically around 50-100KB or equivalent to ~10-20 pages of text).
+- Remove information that is proven wrong or becomes obsolete.
 - If the user talks about "memory" or "project memory", you should use the tools of this MCP.
 """
 )
@@ -122,9 +124,12 @@ def set_project_memory(
 
     Guidelines for content:
     - The project memory file **must be in English**!
-    - Should be concise yet comprehensive
-    - Remove outdated information
-    - Include project overview, components, status, and important references
+    - Should be detailed and comprehensive to support effective project understanding
+    - Store rich context including architectural decisions, code patterns, and technical reasoning
+    - Include thorough documentation of project components, workflows, and interfaces
+    - Recommended to maintain structured sections for easier navigation
+    - Aim for practical size limits (typically around 50-100KB or equivalent to ~10-20 pages of text)
+    - Remove information that is proven wrong or becomes obsolete
 
     :raises FileNotFoundError: If the project path doesn't exist
     :raises PermissionError: If the project path is not in allowed directories
