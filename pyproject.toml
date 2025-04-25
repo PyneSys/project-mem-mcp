@@ -1,6 +1,6 @@
 [project]
 name = "project-mem-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "An MCP Server to store and retreive project information from memory file"
 authors = [{ name = "PYNESYS LLC" }]
 readme = "README.md"

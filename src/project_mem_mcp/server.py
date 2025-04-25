@@ -15,7 +15,7 @@ MEMORY_FILE = "MEMORY.md"
 mcp = FastMCP(
     name="Project Memory MCP",
     instructions=f"""
-This MCP is for storing and retrieving project information to/from an English memory file, named
+This MCP is for storing and retrieving project information to/from an English(!) memory file, named
 `{MEMORY_FILE}` in the project directory.
 
 The memory file should store comprehensive information about the project. It should include thorough context
@@ -283,7 +283,8 @@ def update_project_memory(
     patch_content: str = Field(description="Block-based patch content with SEARCH/REPLACE markers")
 ):
     """
-    Update the project memory by applying a block-based patch to the memory file.
+    Update the project memory by applying a block-based patch to the memory file. The language of the memory file
+    is English!
 
     Required block format:
     ```
