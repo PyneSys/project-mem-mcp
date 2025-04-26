@@ -34,7 +34,7 @@ Rules:
   failed or there is no project memory yet.
 - Never store any sensitive information in the memory file, e.g. personal information, company
   information, passwords, access tokens, email addresses, etc!
-- The memory file **must be in English**!
+- The memory file **must be in English**! Any non-English text in the memory file is considered a critical error!
 - While thoroughness is encouraged, avoid excessive verbosity or redundancy. The memory file should not
   exceed practical limits (typically around 50-100KB or equivalent to ~10-20 pages of text).
 - Remove information that is proven wrong or becomes obsolete.
@@ -123,7 +123,7 @@ def set_project_memory(
     - When extensive reorganization of the memory content is needed
 
     Guidelines for content:
-    - The project memory file **must be in English**!
+    - The project memory file **must be in English**! Any non-English text in the memory file is considered a critical error!
     - Should be detailed and comprehensive to support effective project understanding
     - Store rich context including architectural decisions, code patterns, and technical reasoning
     - Include thorough documentation of project components, workflows, and interfaces
@@ -284,7 +284,7 @@ def update_project_memory(
 ):
     """
     Update the project memory by applying a block-based patch to the memory file. The language of the memory file
-    is English!
+    is English! Any non-English text in the memory file is considered a critical error!
 
     Required block format:
     ```
