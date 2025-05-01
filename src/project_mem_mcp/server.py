@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 import sys
 import argparse
+import re
 from pathlib import Path
 
 from fastmcp import FastMCP
 from pydantic.fields import Field
-import re
-
-# No need for unidiff import anymore as we're using block-based patching
 
 MEMORY_FILE = "MEMORY.md"
 
@@ -19,9 +17,9 @@ This MCP is for storing and retrieving project information to/from an English(!)
 `{MEMORY_FILE}` in the project directory.
 
 The memory file should store comprehensive information about the project. It should include thorough context
-and details that help both humans and AI agents understand the project deeply. The memory should contain
+and details that help AI agents understand the project deeply. The memory should contain
 detailed descriptions, code structures, architectural decisions, ongoing tasks, future plans, discovered insights,
-challenges, references to important files, and other project resources. Include URLs, design patterns, and
+challenges, paths to important files, and other project resources. Include URLs, design patterns, and
 technical decisions with reasoning when relevant.
 
 Rules:
@@ -39,6 +37,7 @@ Rules:
   exceed practical limits (typically around 50-100KB or equivalent to ~10-20 pages of text).
 - Remove information that is proven wrong or becomes obsolete.
 - If the user talks about "memory" or "project memory", you should use the tools of this MCP.
+- The `{MEMORY_FILE}` file must only be accessed using the tools of this MCP.
 """
 )
 
@@ -57,7 +56,7 @@ def main():
         '--allowed-dir',
         action='append',
         dest='allowed_dirs',
-        required=True,
+        default=[],
         help='Allowed base directory for project paths (can be used multiple times)'
     )
     args = parser.parse_args()
